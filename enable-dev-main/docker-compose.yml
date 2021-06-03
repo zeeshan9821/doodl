@@ -1,0 +1,136 @@
+version: "3.7"
+services:
+
+  portal:
+    build:
+      context: ./enable-web-app
+      dockerfile: dev.Dockerfile
+    stdin_open: true
+    environment:
+      ZOOM_SDK_KEY: "7QuOrpBoSn-Nyrg1k2P1Fg"
+      OKTA_CLIENT_ID: "0oakkfi6lUOpPxc3V1d6"
+      OKTA_ISSUER: "https://altais.oktapreview.com/oauth2/auscfb4dlPZDXBRuB1d6"
+      RUM_APP_ID: "1b8fa31e-ffdc-4e3b-8623-06e1b35f9b40"
+      RUM_CLIENT_TOKEN: "pubf7bcbefff905b430d4a9893915cd4542"
+      ADMIN_BACKEND_API_BASE_URL: "http://localhost:8085/admin"
+      ENV: "local"
+      SUKI_URL: "https://app.suki-dev.com/altais?v=2"
+      PROVIDER_BULK_UPLOAD_CSV_TEMPLATE: "https://alth-uw2-devplatform-bulk-upload-public.s3-us-west-2.amazonaws.com/providers_template.csv"
+      LOCATION_BULK_UPLOAD_CSV_TEMPLATE: "https://alth-uw2-devplatform-bulk-upload-public.s3-us-west-2.amazonaws.com/locations_template.csv"
+      PATIENT_BULK_UPLOAD_CSV_TEMPLATE: "https://alth-uw2-devplatform-bulk-upload-public.s3-us-west-2.amazonaws.com/patients_template.csv"
+      LMS_URL: "https://altais.oktapreview.com/home/altais_absorblms_1/0oaqleedihIGJVRPE1d6/alnqlji3iawIWZje21d6"
+    volumes:
+      - ./enable-web-app/src:/app/src
+
+# for front end development to access dev env
+  gateway:
+    image: nginx:1.18-alpine
+    ports:
+      - 3000:3000
+    environment:
+      MESSAGING_API: enable-svc-messaging.devplatform.uw2.alth.us:443
+      CONFERENCE_API: enable-svc-conference.devplatform.uw2.alth.us:443
+      ADMIN_API: enable-svc-admin.devplatform.uw2.alth.us:443
+      USERS_API: enable-svc-user.devplatform.uw2.alth.us:443
+      PATIENT_API: enable-svc-patient.devplatform.uw2.alth.us:443
+      REGISTRATION_API: enable-svc-registration.devplatform.uw2.alth.us:443
+      PREVISIT_API: enable-svc-previsit.devplatform.uw2.alth.us:443
+#      MESSAGING_API: host.docker.internal:8081
+#      CONFERENCE_API: host.docker.internal:8082
+#      ADMIN_API: host.docker.internal:8085
+#      USERS_API: host.docker.internal:8094
+#      PATIENT_API: host.docker.internal:8083
+#      REGISTRATION_API: host.docker.internal:8097
+#      PREVISIT_API: host.docker.internal:8095
+      PORTAL_WEB: http://portal:3000
+    volumes:
+      - ./ssl/localhost.crt:/etc/ssl/certs/localhost.crt
+      - ./ssl/localhost.key:/etc/ssl/private/localhost.key
+      - ./dev.nginx.conf:/etc/nginx/conf.d/default.template
+    depends_on:
+      - portal
+    command: "/bin/sh -c \"envsubst '$${MESSAGING_API},$${REGISTRATION_API},$${CONFERENCE_API},$${ADMIN_API},$${PORTAL_WEB},$${USERS_API},$${PATIENT_API},$${PREVISIT_API}'< /etc/nginx/conf.d/default.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'\""
+
+#  enable-data-application:
+#    container_name: data-layer
+#    build:
+#      context: ./enable-data-application
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/altais
+#      - SPRING_DATASOURCE_USERNAME=altais
+#      - SPRING_DATASOURCE_PASSWORD=altais
+#      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+#    depends_on:
+#      - db
+
+#  enable-svc-emailsender:
+#    build:
+#      context: ./enable-svc-emailsender
+#    ports:
+#      - "8092:8092"
+
+#  enable-svc-registration:
+#    build:
+#      context: ./enable-svc-registration
+#      dockerfile: Dockerfile
+#    environment:
+#      DATA_ACCESS_URI: http://enable-data-application:8080/api/data/v1/
+#      EMAIL_API_URL: http://enable-svc-emailsender:8092/api/email/v1/
+#    ports:
+#      - "8091:8091"
+
+#  enable-svc-previsit:
+#    build:
+#      context: ./enable-svc-previsit
+#      dockerfile: Dockerfile
+#    environment:
+#      DATA_ACCESS_URI: http://enable-data-application:8080/api/data/v1/
+#      EMAIL_API_URL: http://enable-svc-emailsender:8092/api/email/v1/
+#    ports:
+#      - "8095:8095"
+
+#  enable-svc-previsit:
+#    build:
+#      context: ./enable-svc-previsit
+#      dockerfile: Dockerfile
+#    environment:
+#      DATA_ACCESS_URI: http://enable-data-application:8080/api/data/v1/
+#      EMAIL_API_URL: http://enable-svc-emailsender:8092/api/email/v1/
+#    ports:
+#      - "8095:8095"
+
+#  enable-svc-admin:
+#    build:
+#      context: ./enable-svc-admin
+#      dockerfile: Dockerfile
+#    environment:
+#      S3_BULK_UPLOAD_PRIVATE_BUCKET: alth-uw2-devplatform-bulk-upload-private
+#      ACTIVEMQ_USER: BpMBcLdL
+#      ACTIVEMQ_PASSWORD: ndwctIhtQe8clLGK
+#      ACTIVEMQ_FAILOVER_URL_ONE: ssl://b-01a1cdb2-7dfa-40bc-bed8-1f6e6937353c-1.mq.us-west-2.amazonaws.com:61617
+#      ACTIVEMQ_FAILOVER_URL_TWO: ssl://b-01a1cdb2-7dfa-40bc-bed8-1f6e6937353c-2.mq.us-west-2.amazonaws.com:61617
+#    ports:
+#      - "8085:8085"
+
+#  db:
+#    image: "postgres"
+#    container_name: altais-db
+#    restart: always
+#    ports:
+#      - "5432:5432"
+#    environment:
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=postgres
+#    volumes:
+#      - ./enable-data-application/docker/docker-postgres.sql:/docker-entrypoint-initdb.d/docker-postgres.sql
+
+#  active-mq:
+#    build:
+#      context: ./app-services/active-mq
+#    ports:
+#      - 8161:8161
+#      - 5672:5672
+#      - 61616:61616

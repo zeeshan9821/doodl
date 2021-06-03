@@ -1,0 +1,24 @@
+version: "3.7"
+services:
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db
+  enable-data-application:
+    extends:
+      file: docker-compose.yml
+      service: enable-data-application
+    depends_on:
+      - db
+  enable-svc-emailsender:
+    extends:
+      file: docker-compose.yml
+      service: enable-svc-emailsender
+  enable-registration-app:
+    extends:
+      file: docker-compose.yml
+      service: enable-svc-registration
+  enable-svc-previsit:
+    extends:
+      file: docker-compose.yml
+      service: enable-svc-previsit

@@ -1,0 +1,11 @@
+.project
+.idea
+.DS_Store
+**/node_modules
+*.sqlite
+**/coverage
+build
+dist
+
+enable-*
+poc-microsvc-template
